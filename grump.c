@@ -49,7 +49,8 @@ static void print_usage()
 
 int main(int argc, char **argv)
 {
-  int    serial_fd, file_fd = -1;
+    int    serial_fd;
+    // file_fd = -1;
   char  *serial_portname = NULL;
   struct termios term, saved_term;
   fd_set rd_map;
@@ -139,7 +140,7 @@ int main(int argc, char **argv)
   cfmakeraw(&term);
   // Turn of carrier detect (ie. make /dev/ttyd0 work like cuaa0
   term.c_cflag |= CLOCAL | CREAD;
-#ifndef linux
+#ifndef __linux__
   // Turn off RTS/CTS flow control (probably off anyhow, but make sure)
   term.c_cflag &= ~(CCTS_OFLOW | CRTS_IFLOW);
 #endif
@@ -176,19 +177,25 @@ int main(int argc, char **argv)
       if (len != 1)
       {
         // really should check what happened more carefully
-        printf("!!! read %d chars instead of 1\n",len);
+          printf("!!! read %d chars instead of 1\n", (int)len);
         continue;
       }
       else if (ch == 3)
       {
-        // The user typed CTRL-C. Send it down the serial port, but also take
-        // it as an instruction to set the keyboard back to normal and exit.
-        write(serial_fd, &ch, 1);
-        tcsetattr(STDIN_FILENO, TCSANOW, &saved_term);
-        return 0;
+          ssize_t rv;
+          // The user typed CTRL-C. Send it down the serial port, but also take
+          // it as an instruction to set the keyboard back to normal and exit.
+          rv = write(serial_fd, &ch, 1);
+          tcsetattr(STDIN_FILENO, TCSANOW, &saved_term);
+          (void)rv;
+          return 0;
       }
       else
-        write(serial_fd, &ch, 1);
+      {
+          ssize_t rv;
+          rv = write(serial_fd, &ch, 1);
+          (void)rv;
+      }
     }
     // If we have output from the serial port, reflect it to the user
     if (FD_ISSET(serial_fd, &rd_map))
@@ -198,10 +205,14 @@ int main(int argc, char **argv)
       if (len != 1)
       {
         fprintf(stderr,"Error reading from serial port (read %d): %s",
-                len,strerror(errno));
+                (int)len,strerror(errno));
         return 1;
       }
-      write(STDOUT_FILENO, &bb, 1);
+      {
+          ssize_t rv;
+          rv = write(STDOUT_FILENO, &bb, 1);
+          (void)rv;
+      }
     }
   }
 }
