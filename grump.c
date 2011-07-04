@@ -29,11 +29,15 @@ typedef unsigned char byte;
 static void print_usage()
 {
   fprintf(stderr,
-          "Usage: grump [-speed <speed>] [<serial device>]\n"
+          "Usage: grump [-stop <1|2>] [-parity <odd|even|none>] [-speed <speed>] \n"
+          "             [-shake <none|ctsrts|xon>] [<serial device>]\n"
           "\n"
           "A very simple program for interacting over the serial port.\n"
           "\n"
+          "       <stop>  defaults to 1\n"
+          "       <parity> defaults to none\n"
           "       <speed> defaults to 115200\n"
+          "       <shake> defaults to off\n"
           "       <serial device> defaults to /dev/ttyUSB0\n"
           "\n"
           "So, for instance:\n"
@@ -56,6 +60,9 @@ int main(int argc, char **argv)
   fd_set rd_map;
   int    speed = 115200;
   int    bspeed;
+  int parity = 0; // -1 for odd, +1 for even.
+  int stop = 1;
+  int shake = 0; // 1 - crtscts, 2 - xonoff (not yet supported)
 
   int ii = 1;
 
@@ -68,6 +75,56 @@ int main(int argc, char **argv)
       {
         print_usage();
         return 0;
+      }
+      else if (!strcmp("-shake", argv[ii]))
+      {
+          ++ii;
+          // Account for user confusion .., 
+          if (!strcmp("rtscts", argv[ii]) || !strcmp("ctsrts", argv[ii]))
+          {
+              shake = 1;
+          }
+          else if (!strcmp("xon", argv[ii]))
+          {
+              shake = 2;
+          }
+          else if (!strcmp("none", argv[ii]) || !strcmp("off", argv[ii]))
+          {
+              shake = 0;
+          }
+          else
+          {
+              fprintf(stderr, "### grump: Invalid handshake type - '%s'\n",
+                      argv[ii]);
+              return 1;
+          }
+      }
+      else if (!strcmp("-parity", argv[ii]))
+      {
+          ++ii;
+          if (!strcmp(argv[ii],"odd")) 
+          {
+              parity = -1; 
+          }
+          else if (!strcmp(argv[ii], "none"))
+          {
+              parity = 0;
+          }
+          else if (!strcmp(argv[ii], "even"))
+          {
+              parity = 1;
+          }
+      }
+      else if (!strcmp("-stop", argv[ii]))
+      {
+          ++ii;
+          stop = atoi(argv[ii+1]);
+          if (stop != 1 && stop != 2)
+          {
+              fprintf(stderr, "### grump: Can only cope with 1 or 2 stop bits - '%s'\n",
+                      argv[ii]);
+              return 1;
+          }
       }
       else if (!strcmp("-speed",argv[ii]))
       {
@@ -140,6 +197,35 @@ int main(int argc, char **argv)
   cfmakeraw(&term);
   // Turn of carrier detect (ie. make /dev/ttyd0 work like cuaa0
   term.c_cflag |= CLOCAL | CREAD;
+  term.c_cflag &= ~(PARENB | PARODD);
+  if (parity < 0)
+  { 
+      // Odd parity
+      term.c_cflag |= PARENB | PARODD;
+  }
+  else if (parity > 0)
+  {
+      // Even parity
+      term.c_cflag |= PARENB;
+  }
+  if (stop == 2)
+  {
+      term.c_cflag |= CSTOPB;
+  }
+  else 
+  {
+      term.c_cflag &= ~CSTOPB;
+  }
+
+  term.c_cflag &= ~(CRTSCTS);
+  term.c_iflag &= ~(IXON);
+  switch (shake)
+  {
+  case 0: break;
+  case 1: term.c_cflag |= CRTSCTS; break;
+  case 2: term.c_iflag |= IXON; break;
+  }
+      
 #ifndef __linux__
   // Turn off RTS/CTS flow control (probably off anyhow, but make sure)
   term.c_cflag &= ~(CCTS_OFLOW | CRTS_IFLOW);

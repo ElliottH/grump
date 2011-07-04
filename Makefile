@@ -1,4 +1,4 @@
-CFLAGS=-g -O2 -Wall --std=c99 -Werror -D_BSD_SOURCE=1
+CFLAGS=-g -O2 -m32 -Wall --std=c99 -Werror -D_BSD_SOURCE=1
 CC=gcc
 
 all: grump
