@@ -74,7 +74,7 @@ int main(int argc, char **argv)
       {
         print_usage();
         return 0;
-      }
+      }      
       else if (!strcmp("-shake", argv[ii]))
       {
           ++ii;
@@ -169,7 +169,7 @@ int main(int argc, char **argv)
     case 230400: bspeed = B230400; break;
     default:
       printf("Speed %d not supported\n",speed);
-      return 1; 
+      return 1;
   }
 
   /* Open the port.  NB. without O_NONBLOCK, this would wait until the	*/
