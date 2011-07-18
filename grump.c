@@ -5,7 +5,6 @@
 // 2. signal handler to ditto
 // 3. consider mimicking mimicking miniterm.py's "exit" keybinding?
 // 4. ditto for it's "obey a file"? do I ever want to use that?
-// 5. check I'm still able to send <RETURN> to IntActOS properly
 //
 //      (miniterm.py says "Quit: Ctrl+]  |  Upload: Ctrl+U")
 
@@ -302,3 +301,5 @@ int main(int argc, char **argv)
     }
   }
 }
+
+/* End file */
